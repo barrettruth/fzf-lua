@@ -1305,7 +1305,8 @@ end
 ---@return string|[string, string?][]|nil
 local function picker_title(title)
   if title == false then return nil end
-  return title or (" %s "):format(tostring(FzfLua.get_info().cmd))
+  local cmd = FzfLua.get_info().cmd
+  return title or (cmd and (" %s "):format(tostring(cmd))) or nil
 end
 
 function FzfWin:update_statusline()
