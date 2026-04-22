@@ -1301,6 +1301,13 @@ function FzfWin:update_preview_scrollbar()
     self.winopts)
 end
 
+---@param title string|[string, string?][]|false|nil
+---@return string|[string, string?][]|nil
+local function picker_title(title)
+  if title == false then return nil end
+  return title or (" %s "):format(tostring(FzfLua.get_info().cmd))
+end
+
 function FzfWin:update_statusline()
   if not self.winopts.split then
     -- NOTE: 0.12 added float win local statusline, we nullify the statusline here and
@@ -1311,12 +1318,15 @@ function FzfWin:update_statusline()
     end
     return
   end
-  local titlestr = self.winopts.title or (" %s "):format(tostring(FzfLua.get_info().cmd))
-  local title = make_title(titlestr, self.hls.title)
-  local parts = vim.tbl_map(function(p) return ("%%#%s#%s%%#fzf3#"):format(p[2], p[1]) end, title)
-  local picker = table.remove(parts, 1) or ""
-  vim.wo[self.fzf_winid].statusline = "%#fzf1# > %#fzf2#fzf-lua%#fzf3#"
-      .. string.format(" %s %s", picker, table.concat(parts, ""))
+  local titlestr = picker_title(self.winopts.title)
+  local statusline = "%#fzf1# > %#fzf2#fzf-lua%#fzf3#"
+  if titlestr then
+    local title = make_title(titlestr, self.hls.title)
+    local parts = vim.tbl_map(function(p) return ("%%#%s#%s%%#fzf3#"):format(p[2], p[1]) end, title)
+    local picker = table.remove(parts, 1) or ""
+    statusline = statusline .. string.format(" %s %s", picker, table.concat(parts, ""))
+  end
+  vim.wo[self.fzf_winid].statusline = statusline
 end
 
 function FzfWin:update_fzf_border_label()
@@ -1326,7 +1336,8 @@ function FzfWin:update_fzf_border_label()
   then
     return
   end
-  local titlestr = self.winopts.title or (" %s "):format(tostring(FzfLua.get_info().cmd))
+  local titlestr = picker_title(self.winopts.title)
+  if not titlestr then return end
   local title = make_title(titlestr, self.hls.title)
   local parts = vim.tbl_map(function(p) return (utils.ansi_from_hl(p[2], p[1])) end, title)
   self._o.fzf_opts["--border-label"] = table.concat(parts, " ")

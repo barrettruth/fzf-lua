@@ -57,8 +57,8 @@ end
 ---@field col? number
 ---Border of the fzf-lua float, possible values are `none|single|double|rounded|thicc|thiccc|thicccc` or a custom border character array passed as is to `nvim_open_win`.
 ---@field border? string|table
----Controls title display in the fzf window, set by the calling picker.
----@field title? string
+---Controls title display in the fzf window, set by the calling picker. Set to `false` to hide the title and suppress picker label fallbacks.
+---@field title? string|false
 ---Controls title display in the fzf window, possible values are `left|right|center`.
 ---@field title_pos? "center"|"left"|"right"
 ---Set to `false` to disable fzf window title flags (hidden, ignore, etc).

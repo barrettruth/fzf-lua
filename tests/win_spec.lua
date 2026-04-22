@@ -21,8 +21,23 @@ local sleep = function(ms) helpers.sleep(ms, child) end
 local T = helpers.new_set_with_child(child)
 
 T["win"] = new_set()
+T["win"]["title"] = new_set()
 
 T["win"]["hide"] = new_set()
+
+T["win"]["title"]["global title=false hides split title fallbacks"] = function()
+  reload({ winopts = { title = false } })
+  exec_lua([[FzfLua.files { query = "README.md", winopts = { split = "enew" } }]])
+  child.wait_until(function()
+    return child.lua_get([[_G._fzf_load_called]]) == true
+  end)
+  eq(child.lua_get([[string.lower(vim.wo[FzfLua.utils.fzf_winobj().fzf_winid].statusline):match("files")]]), vim.NIL)
+  eq(child.lua_get([=[FzfLua.utils.fzf_winobj()._o.fzf_opts["--border-label"]]=]), vim.NIL)
+  child.type_keys("<c-c>")
+  child.wait_until(function()
+    return child.lua_get([[_G._fzf_lua_on_create]]) == vim.NIL
+  end)
+end
 
 T["win"]["hide"]["ensure gc called after win hidden (#1782)"] = function()
   exec_lua([[_G._fzf_lua_gc_called = nil]])

@@ -65,6 +65,7 @@ end
 -- proxy table (with logic) for accessing the global config
 ---@type fzf-lua.Config|{}
 M.setup_opts = {}
+M.setup_call_opts = {}
 
 ---@type fzf-lua.config.Defaults
 M.globals = setmetatable({}, {
@@ -152,7 +153,6 @@ local eval = function(v, ...)
   return v
 end
 
-
 ---expand opts that were specified with a dot
 ---@param opts table
 local normalize_tbl = function(opts)
@@ -179,6 +179,7 @@ function M.normalize_opts(opts, globals, __resume_key) ---@diagnostic disable
   -- opts can also be a function that returns an opts table
   ---@type fzf-lua.config.Resolved
   opts = eval(opts) or {}
+  local picker = type(globals) == "string" and globals or nil
 
   if opts._normalized then
     return opts
@@ -379,6 +380,37 @@ function M.normalize_opts(opts, globals, __resume_key) ---@diagnostic disable
   }) do
     extend_opts(globals, k)
     extend_opts(M.globals, k)
+  end
+
+  -- Merge priority: the user's top-level setup options should beat profile
+  -- per-picker options. `M.setup_call_opts` is a deepcopy of setup opts taken
+  -- before `load_profiles` merges profile defaults in, so it reflects the
+  -- user's raw intent. Here we overlay user's top-level (and `defaults.*`)
+  -- values over keys that may have been injected per-picker by a profile
+  -- (e.g. `default-title` sets `files.winopts.title = " Files "`). Values the
+  -- user explicitly set at call-time or per-picker setup remain pinned.
+  if type(picker) == "string" and type(M.setup_call_opts) == "table" then
+    for _, k in ipairs({ "winopts", "fzf_opts", "fzf_colors", "fzf_tmux_opts", "hls" }) do
+      local user_picker = utils.map_get(M.setup_call_opts, picker .. "." .. k)
+      local call_v = opts.__call_opts and opts.__call_opts[k]
+      for _, path in ipairs({ "defaults." .. k, k }) do
+        local src = utils.map_get(M.setup_call_opts, path)
+        if vim.is_callable(src) then src = src(opts) end
+        if type(src) == "table" and type(opts[k]) == "table" then
+          for sk, sv in pairs(src) do
+            local pinned = (type(user_picker) == "table" and user_picker[sk] ~= nil)
+                or (type(call_v) == "table" and call_v[sk] ~= nil)
+            if not pinned then
+              if type(sv) == "table" and type(opts[k][sk]) == "table" then
+                opts[k][sk] = vim.tbl_deep_extend("force", opts[k][sk], sv)
+              else
+                opts[k][sk] = sv
+              end
+            end
+          end
+        end
+      end
+    end
   end
 
   -- backward compat: no-value flags should be set to `true`, in the past these

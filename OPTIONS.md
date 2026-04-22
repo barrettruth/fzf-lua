@@ -541,9 +541,9 @@ Neovim split command to use for fzf-lua interface, e.g `belowright new`.
 
 #### globals.winopts.title
 
-Type: `string`, Default: `nil`
+Type: `string|false`, Default: `nil`
 
-Controls title display in the fzf window, set by the calling picker.
+Controls title display in the fzf window, set by the calling picker. Set to `false` to hide the title and suppress picker label fallbacks.
 
 #### globals.winopts.title_flags
 

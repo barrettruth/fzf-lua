@@ -181,6 +181,7 @@ M.setup_highlights()
 ---@param do_not_reset_defaults? boolean
 function M.setup(opts, do_not_reset_defaults)
   opts = type(opts) == "table" and opts or {}
+  local call_opts = vim.deepcopy(opts)
   -- Defaults to picker info in win title if neovim version >= 0.9, prompt otherwise
   opts[1] = opts[1] == nil and "default" or opts[1]
   if opts[1] then
@@ -191,6 +192,7 @@ function M.setup(opts, do_not_reset_defaults)
   if do_not_reset_defaults then
     -- no defaults reset requested, merge with previous setup options
     opts = vim.tbl_deep_extend("keep", opts, config.setup_opts or {})
+    call_opts = vim.tbl_deep_extend("keep", call_opts, config.setup_call_opts or {})
   end
   -- backward compat `global_{git|gile|color}_icons`
   -- converts `global_file_icons` to `defaults.file_icons`, etc
@@ -215,6 +217,7 @@ function M.setup(opts, do_not_reset_defaults)
   -- set custom &nbsp if caller requested
   if type(opts.nbsp) == "string" then utils.nbsp = opts.nbsp end
   -- store the setup options
+  config.setup_call_opts = call_opts
   config.setup_opts = opts
   -- setup highlights
   M.setup_highlights()
